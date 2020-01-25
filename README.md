@@ -4,6 +4,7 @@
 Androidx CardView that moves with your phone, Using gyro sensors.
 
 `"When you require a card to choose, Pick a card that moves."`
+`"The only card that is right, Is the card that is alive."`
 
 Step 1. Add the JitPack repository to your build file
 
