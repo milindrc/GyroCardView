@@ -1,0 +1,2 @@
+include ':app', ':gyrocardview'
+rootProject.name='GyroCardSample'
