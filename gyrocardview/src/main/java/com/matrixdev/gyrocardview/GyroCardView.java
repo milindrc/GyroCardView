@@ -41,6 +41,7 @@ public class GyroCardView extends CardView {
     private Sensor sensor3;
     private float XOffset = 0.7f;
     private boolean isVerticalRotationEnabled;
+    private SensorEventListener2 sensorListener3;
 
     public GyroCardView(@NonNull Context context) {
         super(context);
@@ -137,7 +138,7 @@ public class GyroCardView extends CardView {
 //        sensorManager.registerListener(sensorListener, sensor2, SensorManager.SENSOR_DELAY_FASTEST);
 
 
-        sensorManager.registerListener(new SensorEventListener2() {
+        sensorListener3 = new SensorEventListener2() {
             @Override
             public void onFlushCompleted(Sensor sensor) {
 
@@ -165,12 +166,22 @@ public class GyroCardView extends CardView {
             public void onAccuracyChanged(Sensor sensor, int i) {
 
             }
-        },sensor3,SensorManager.SENSOR_DELAY_FASTEST);
+        };
+        sensorManager.registerListener(sensorListener3,sensor3,SensorManager.SENSOR_DELAY_FASTEST);
 
     }
 
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        try{
+            sensorManager.unregisterListener(sensorListener3);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
-//    @Override
+    //    @Override
 //    protected boolean getChildStaticTransformation(View child, Transformation t) {
 //
 //        // apply transform to child view - child triggers this call by call to `invalidate()`
