@@ -16,16 +16,16 @@ import android.hardware.SensorManager;
 import android.os.CountDownTimer;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.View;
 import android.view.ViewPropertyAnimator;
 import android.view.animation.Animation;
-import android.view.animation.LinearInterpolator;
 import android.view.animation.Transformation;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.core.graphics.ColorUtils;
+
+import java.util.Arrays;
 
 public class GyroCardView extends CardView {
     private SensorManager sensorManager;
@@ -38,6 +38,9 @@ public class GyroCardView extends CardView {
     private boolean isGlareEnabled;
     private int glareColor;
     private int intensity;
+    private Sensor sensor3;
+    private float XOffset = 0.7f;
+    private boolean isVerticalRotationEnabled;
 
     public GyroCardView(@NonNull Context context) {
         super(context);
@@ -60,6 +63,7 @@ public class GyroCardView extends CardView {
         TypedArray attributes = getContext().obtainStyledAttributes(attrs, R.styleable.GyroCardView);
 
         isGlareEnabled = attributes.getBoolean(R.styleable.GyroCardView_isGlareEnabled, true);
+        isVerticalRotationEnabled = attributes.getBoolean(R.styleable.GyroCardView_isVertialRotationEnabled, false);
         glareColor = attributes.getColor(R.styleable.GyroCardView_glareColor, Color.WHITE);
         intensity = attributes.getInteger(R.styleable.GyroCardView_intensity, 4);
 
@@ -71,33 +75,8 @@ public class GyroCardView extends CardView {
         sensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sensor2 = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        sensor3 = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
 
-
-//        setCardElevation(0);
-//        setScaleX(.7f);
-//        setScaleY(.7f);
-//        countDown = new CountDownTimer(36000, 10) {
-//            float i = 1;
-//            @Override
-//            public void onTick(long l) {
-//                i = i>360?0:i;
-//                setRotationY(i++);
-//                setScaleX((float) (1 + (.3 * ((i%180)-90)/90)));
-////                setCameraDistance(1000);
-////                matrix.preRotate(i,getWidth()/2,getHeight()/2);
-////                MyAnimation animation = new MyAnimation(matrix);
-////                animation.setDuration(0);
-////                animation.setFillAfter(true);
-////                setAnimation(animation);
-//            }
-//
-//            @Override
-//            public void onFinish() {
-//                i=0;
-//                countDown.start();
-//            }
-//        };
-//        countDown.start();
 
         sensorListener = new SensorEventListener2() {
             private float[] mMagnetometerData = new float[3];
@@ -133,7 +112,7 @@ public class GyroCardView extends CardView {
                 if (Math.abs(orientationValues[2]) <= 1 && Math.abs(orientationValues[1]) <= 1.5) {
                     setRotationY(intensity * orientationValues[2]);
                     if(isGlareEnabled) {
-                        drawGlare(orientationValues[2]);
+                        drawGlare(orientationValues[2], 0f);
                     }
                     invalidate();
                 }
@@ -143,7 +122,7 @@ public class GyroCardView extends CardView {
                    float factor = orientationValues[2] > 0 ? 3 - orientationValues[2] : -(orientationValues[2]+3);
                     setRotationY(intensity * factor);
                     if(isGlareEnabled) {
-                        drawGlare(factor);
+                        drawGlare(factor, 0f);
                     }
                     invalidate();
                 }
@@ -154,8 +133,39 @@ public class GyroCardView extends CardView {
 
             }
         };
-        sensorManager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_FASTEST);
-        sensorManager.registerListener(sensorListener, sensor2, SensorManager.SENSOR_DELAY_FASTEST);
+//        sensorManager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_FASTEST);
+//        sensorManager.registerListener(sensorListener, sensor2, SensorManager.SENSOR_DELAY_FASTEST);
+
+
+        sensorManager.registerListener(new SensorEventListener2() {
+            @Override
+            public void onFlushCompleted(Sensor sensor) {
+
+            }
+
+            @Override
+            public void onSensorChanged(SensorEvent sensorEvent) {
+                float percY = sensorEvent.values[0] /10;
+                float percX = sensorEvent.values[1] /10;
+                float targetPercX = (1-((1-percX)*Math.signum(sensorEvent.values[2]))-0.7f);
+                setRotationY(intensity * percY);
+                if(isVerticalRotationEnabled) {
+                    setRotationX(intensity * targetPercX);
+                }
+                if(isVerticalRotationEnabled && isGlareEnabled){
+                    drawGlare(percY,percX);
+                }else if(isGlareEnabled) {
+                    drawGlare(percY,0);
+                }
+                invalidate();
+                Log.d("-----", Arrays.toString(sensorEvent.values)  );
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int i) {
+
+            }
+        },sensor3,SensorManager.SENSOR_DELAY_FASTEST);
 
     }
 
@@ -168,14 +178,15 @@ public class GyroCardView extends CardView {
 //        return true;
 //    }
 
-    public void drawGlare(final float rotation) {
+    public void drawGlare(final float rotation, final float percX) {
         ShapeDrawable.ShaderFactory sf = new ShapeDrawable.ShaderFactory() {
             @Override
             public Shader resize(int width, int height) {
                 float mid = .55f + (-0.2f * rotation);
                 int color1 = ColorUtils.setAlphaComponent(glareColor, 100);
                 int color2 = ColorUtils.setAlphaComponent(glareColor, 75);
-                LinearGradient lg = new LinearGradient(0, 0 - Math.abs(width - height), width, height + Math.abs(width - height),
+                float xchange = 400 * percX;
+                LinearGradient lg = new LinearGradient(0, 0 - Math.abs(width - height) - xchange, width , height + Math.abs(width - height) ,
                         new int[]{Color.TRANSPARENT, Color.TRANSPARENT, color1,color2, Color.TRANSPARENT},
                         new float[]{0, mid - .2f, mid, mid + .1f, mid + .2f}, Shader.TileMode.REPEAT);
                 return lg;

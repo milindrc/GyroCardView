@@ -2,6 +2,7 @@
 <resources>
     <declare-styleable name="GyroCardView">
         <attr name="isGlareEnabled" format="boolean"/>
+        <attr name="isVertialRotationEnabled" format="boolean"/>
         <attr name="glareColor" format="color"/>
         <attr name="intensity" format="integer"/>
     </declare-styleable>
