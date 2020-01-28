@@ -159,7 +159,7 @@ public class GyroCardView extends CardView {
                     drawGlare(percY,0);
                 }
                 invalidate();
-                Log.d("-----", Arrays.toString(sensorEvent.values)  );
+//                Log.d("-----", Arrays.toString(sensorEvent.values)  );
             }
 
             @Override
